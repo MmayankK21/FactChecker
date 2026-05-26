@@ -33,7 +33,7 @@ if uploaded_file is not None:
     with st.spinner("Extracting text and identifying claims..."):
         raw_text = extract_text_from_pdf(pdf_bytes)
         try:
-            claims = extract_claims(raw_text, client)
+            claims, extract_usage = extract_claims(raw_text, client)
         except Exception as e:
             st.error(f"Failed to parse claims from model response: {e}")
             st.stop()
@@ -45,12 +45,14 @@ if uploaded_file is not None:
     total = len(claims)
     st.info(f"Found {total} claim{'s' if total != 1 else ''} — starting verification...")
 
-    # ── Pre-allocate layout slots (order is fixed at creation time) ───────────
+    # ── Pre-allocate layout slots ─────────────────────────────────────────────
     summary_placeholder = st.empty()
     progress_bar = st.progress(0.0, text="Verifying claims...")
     card_placeholders = [st.empty() for _ in range(total)]
 
     counts: dict[str, int] = {"Verified": 0, "Inaccurate": 0, "Unverified": 0}
+    total_input_tokens = extract_usage["input"]
+    total_output_tokens = extract_usage["output"]
 
     def render_summary() -> None:
         summary_placeholder.markdown(
@@ -71,7 +73,10 @@ if uploaded_file is not None:
 
         card_placeholders[i].info(f"Checking: _{claim_text}_")
 
-        result = verify_claim(claim_text, client)
+        result, usage = verify_claim(claim_text, client)
+        total_input_tokens += usage["input"]
+        total_output_tokens += usage["output"]
+
         verdict = result.get("verdict", "Unverified")
         reason = result.get("reason", "")
         corrected = result.get("corrected_value")
@@ -105,6 +110,13 @@ if uploaded_file is not None:
 
     # ── Done ──────────────────────────────────────────────────────────────────
     progress_bar.progress(1.0, text="All claims verified.")
+
+    st.divider()
+    st.markdown("### Token Usage for this PDF")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Input Tokens", f"{total_input_tokens:,}")
+    col2.metric("Output Tokens", f"{total_output_tokens:,}")
+    col3.metric("Total Tokens", f"{total_input_tokens + total_output_tokens:,}")
 
     st.download_button(
         label="Download Results as JSON",

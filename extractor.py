@@ -30,8 +30,11 @@ def _strip_fences(raw: str) -> str:
     return raw
 
 
-def extract_claims(text: str, client: Groq) -> list[dict]:
-    # Truncate to ~12 000 chars to stay within token limits
+def extract_claims(text: str, client: Groq) -> tuple[list[dict], dict]:
+    """
+    Returns (claims, usage) where usage = {"input": int, "output": int}.
+    json.JSONDecodeError propagates to caller (app.py shows st.error).
+    """
     truncated = text[:12000]
 
     response = client.chat.completions.create(
@@ -44,7 +47,11 @@ def extract_claims(text: str, client: Groq) -> list[dict]:
         ],
     )
 
+    usage = {
+        "input": response.usage.prompt_tokens if response.usage else 0,
+        "output": response.usage.completion_tokens if response.usage else 0,
+    }
+
     raw = response.choices[0].message.content.strip()
     cleaned = _strip_fences(raw)
-    # json.JSONDecodeError propagates to caller (app.py shows st.error)
-    return json.loads(cleaned)
+    return json.loads(cleaned), usage
