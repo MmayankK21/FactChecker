@@ -64,7 +64,7 @@ def verify_claim(claim: str, client: Groq) -> tuple[dict, dict]:
     try:
         response = client.chat.completions.create(
             model=MODEL,
-            reasoning_effort="medium",
+            reasoning_effort="low",
             max_completion_tokens=4000,
             tools=[{"type": "browser_search"}],
             messages=[
