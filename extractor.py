@@ -36,8 +36,8 @@ def extract_claims(text: str, client: Groq) -> list[dict]:
 
     response = client.chat.completions.create(
         model=MODEL,
-        reasoning_effort="medium",
-        max_completion_tokens=8192,
+        reasoning_effort="default",
+        max_completion_tokens=4000,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Extract claims from this text:\n\n{truncated}"},

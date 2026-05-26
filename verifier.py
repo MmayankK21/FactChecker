@@ -69,8 +69,8 @@ def verify_claim(claim: str, client: Groq) -> dict:
     try:
         response = client.chat.completions.create(
             model=MODEL,
-            reasoning_effort="medium",
-            max_completion_tokens=8192,
+            reasoning_effort="default",
+            max_completion_tokens=4000,
             tools=[{"type": "browser_search"}],
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
